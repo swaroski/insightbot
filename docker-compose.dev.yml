@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=sqlite:///./insightbot.db
+      - UPLOAD_DIR=/app/uploads
+      - FAISS_INDEX_PATH=/app/faiss_index
+      - LOG_LEVEL=DEBUG
+      - CORS_ORIGINS=http://localhost:3000
+    volumes:
+      - ./backend:/app
+      - ./data/uploads:/app/uploads
+      - ./data/faiss_index:/app/faiss_index
+      - ./data/logs:/app/logs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      target: deps
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - backend
+    restart: unless-stopped

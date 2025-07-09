@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "insightbot": {
+      "command": "python",
+      "args": ["-m", "mcp_server.main"],
+      "cwd": "/app",
+      "env": {
+        "PYTHONPATH": "/app",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "DATABASE_URL": "${DATABASE_URL}",
+        "FAISS_INDEX_PATH": "${FAISS_INDEX_PATH}",
+        "UPLOAD_DIR": "${UPLOAD_DIR}"
+      }
+    }
+  }
+}

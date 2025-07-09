@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=sqlite:///./insightbot.db
+      - UPLOAD_DIR=/app/uploads
+      - FAISS_INDEX_PATH=/app/faiss_index
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=http://localhost:3000
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/faiss_index:/app/faiss_index
+      - ./data/logs:/app/logs
+      - ./data/db:/app/db
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=insightbot
+      - POSTGRES_USER=insightbot
+      - POSTGRES_PASSWORD=insightbot_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mcp
+    ports:
+      - "3001:3001"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://insightbot:insightbot_password@postgres:5432/insightbot
+      - UPLOAD_DIR=/app/uploads
+      - FAISS_INDEX_PATH=/app/faiss_index
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/faiss_index:/app/faiss_index
+      - ./data/logs:/app/logs
+      - ./mcp-server.json:/app/mcp-server.json
+    depends_on:
+      - postgres
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
